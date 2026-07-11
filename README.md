@@ -131,7 +131,7 @@ Pages only compose widgets. Data fetching lives in entity query hooks. Shared UI
 - Settings persistence in `localStorage`
 - Drag-and-drop dashboard widget reordering
 - Infinite scroll mode for products
-- PWA manifest and service worker
+- PWA manifest
 - 27 unit tests across utilities, types, and store
 - Storybook for UI component development
 
