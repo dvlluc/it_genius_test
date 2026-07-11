@@ -4,6 +4,7 @@ import { useVirtualizer } from "@tanstack/react-virtual";
 import {
   memo,
   useCallback,
+  useEffect,
   useMemo,
   useRef,
   type ReactNode,
@@ -33,6 +34,7 @@ type DataTableProps<T> = {
   estimateSize?: number;
   height?: number;
   minWidth?: number;
+  onNearEnd?: () => void;
 };
 
 type DataTableRowProps<T> = {
@@ -120,6 +122,7 @@ function DataTableInner<T>({
   estimateSize = 64,
   height = 480,
   minWidth,
+  onNearEnd,
 }: DataTableProps<T>) {
   const parentRef = useRef<HTMLDivElement>(null);
   const showSelection = Boolean(selectedIds && onToggleRow);
@@ -151,6 +154,14 @@ function DataTableInner<T>({
 
   const virtualItems = virtualizer.getVirtualItems();
   const totalSize = virtualizer.getTotalSize();
+
+  useEffect(() => {
+    if (!onNearEnd || virtualItems.length === 0) return;
+    const lastItem = virtualItems[virtualItems.length - 1];
+    if (lastItem.index >= data.length - 1) {
+      onNearEnd();
+    }
+  }, [virtualItems, data.length, onNearEnd]);
 
   return (
     <div
@@ -277,6 +288,7 @@ function dataTablePropsAreEqual<T>(
     prev.estimateSize === next.estimateSize &&
     prev.height === next.height &&
     prev.minWidth === next.minWidth &&
+    prev.onNearEnd === next.onNearEnd &&
     setsEqual(prev.selectedIds, next.selectedIds)
   );
 }

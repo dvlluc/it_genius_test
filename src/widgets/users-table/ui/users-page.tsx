@@ -50,8 +50,10 @@ export function UsersPage() {
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState<UserStatus | "all">("all");
   const [country, setCountry] = useState("all");
-  const [sortBy, setSortBy] = useState<string>("firstName");
-  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
+  const [sort, setSort] = useState<{ by: string; order: "asc" | "desc" }>({
+    by: "firstName",
+    order: "asc",
+  });
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
   const visibleColumns = useUiSettingsStore((s) => s.userColumns);
   const setUserColumns = useUiSettingsStore((s) => s.setUserColumns);
@@ -61,8 +63,8 @@ export function UsersPage() {
     limit: pageSize,
     skip: (page - 1) * pageSize,
     q: debouncedSearch || undefined,
-    sortBy,
-    order: sortOrder,
+    sortBy: sort.by,
+    order: sort.order,
   });
 
   const statusLabels = useMemo(
@@ -170,14 +172,10 @@ export function UsersPage() {
   );
 
   const handleSort = useCallback((columnId: string) => {
-    setSortBy((prev) => {
-      if (prev === columnId) {
-        setSortOrder((order) => (order === "asc" ? "desc" : "asc"));
-        return prev;
-      }
-      setSortOrder("asc");
-      return columnId;
-    });
+    setSort((prev) => ({
+      by: columnId,
+      order: prev.by === columnId ? (prev.order === "asc" ? "desc" : "asc") : "asc",
+    }));
     setPage(1);
   }, []);
 
@@ -332,8 +330,8 @@ export function UsersPage() {
           selectedIds={selectedIds}
           onToggleRow={toggleRow}
           onToggleAll={toggleAll}
-          sortBy={sortBy}
-          sortOrder={sortOrder}
+          sortBy={sort.by}
+          sortOrder={sort.order}
           onSort={handleSort}
           estimateSize={56}
           minWidth={1100}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
 import { LoaderIcon } from "lucide-react";
 import {
@@ -116,11 +116,12 @@ export function ProductsPage() {
   const [category, setCategory] = useState("all");
   const [maxPrice, setMaxPrice] = useState("");
   const [minRating, setMinRating] = useState("");
-  const [sortBy, setSortBy] = useState("title");
-  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
+  const [sort, setSort] = useState<{ by: string; order: "asc" | "desc" }>({
+    by: "title",
+    order: "asc",
+  });
   const [viewMode, setViewMode] = useState<ViewMode>("paginated");
   const debouncedSearch = useDebouncedValue(search, 300);
-  const loadMoreRef = useRef<HTMLDivElement>(null);
 
   const categoriesQuery = useProductCategoriesQuery();
   const columns = useProductColumns();
@@ -130,16 +131,16 @@ export function ProductsPage() {
     skip: (page - 1) * pageSize,
     q: debouncedSearch || undefined,
     category: category === "all" ? undefined : category,
-    sortBy,
-    order: sortOrder,
+    sortBy: sort.by,
+    order: sort.order,
   });
 
   const infiniteQuery = useProductsInfiniteQuery({
     limit: pageSize,
     q: debouncedSearch || undefined,
     category: category === "all" ? undefined : category,
-    sortBy,
-    order: sortOrder,
+    sortBy: sort.by,
+    order: sort.order,
   });
 
   const paginatedProducts = useMemo(() => {
@@ -169,6 +170,18 @@ export function ProductsPage() {
     return rows;
   }, [infiniteQuery.data, maxPrice, minRating]);
 
+  const {
+    hasNextPage: infiniteHasNextPage,
+    isFetchingNextPage: infiniteIsFetchingNextPage,
+    fetchNextPage: infiniteFetchNextPage,
+  } = infiniteQuery;
+
+  const handleNearEnd = useCallback(() => {
+    if (infiniteHasNextPage && !infiniteIsFetchingNextPage) {
+      infiniteFetchNextPage();
+    }
+  }, [infiniteHasNextPage, infiniteIsFetchingNextPage, infiniteFetchNextPage]);
+
   const products = viewMode === "paginated" ? paginatedProducts : infiniteProducts;
   const total = viewMode === "paginated" ? (query.data?.total ?? 0) : infiniteProducts.length;
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
@@ -178,14 +191,10 @@ export function ProductsPage() {
   const activeQuery = viewMode === "paginated" ? query : infiniteQuery;
 
   const handleSort = useCallback((columnId: string) => {
-    setSortBy((prev) => {
-      if (prev === columnId) {
-        setSortOrder((order) => (order === "asc" ? "desc" : "asc"));
-        return prev;
-      }
-      setSortOrder("asc");
-      return columnId;
-    });
+    setSort((prev) => ({
+      by: columnId,
+      order: prev.by === columnId ? (prev.order === "asc" ? "desc" : "asc") : "asc",
+    }));
     setPage(1);
   }, []);
 
@@ -287,29 +296,22 @@ export function ProductsPage() {
           columns={columns}
           data={products}
           getRowId={getProductRowId}
-          sortBy={sortBy}
-          sortOrder={sortOrder}
+          sortBy={sort.by}
+          sortOrder={sort.order}
           onSort={handleSort}
           estimateSize={64}
           minWidth={980}
+          onNearEnd={viewMode === "infinite" ? handleNearEnd : undefined}
         />
       ) : null}
 
-      {viewMode === "infinite" && infiniteQuery.hasNextPage && !infiniteQuery.isFetchingNextPage && (
-        <div ref={loadMoreRef} className="flex justify-center py-4">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => infiniteQuery.fetchNextPage()}
-          >
-            {tCommon("loading")}
-          </Button>
-        </div>
-      )}
       {viewMode === "infinite" && infiniteQuery.isFetchingNextPage && (
         <div className="flex justify-center py-4">
           <LoaderIcon className="size-5 animate-spin text-muted-foreground" />
         </div>
+      )}
+      {viewMode === "infinite" && !infiniteQuery.hasNextPage && products.length > 0 && (
+        <p className="text-center text-sm text-muted-foreground">{tCommon("noResults")}</p>
       )}
 
       {viewMode === "paginated" && (
