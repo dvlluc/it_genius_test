@@ -126,6 +126,7 @@ function DataTableInner<T>({
 }: DataTableProps<T>) {
   const parentRef = useRef<HTMLDivElement>(null);
   const showSelection = Boolean(selectedIds && onToggleRow);
+  const needsVirtualization = data.length * estimateSize > height;
 
   const allSelected =
     data.length > 0 && data.every((row) => selectedIds?.has(getRowId(row)));
@@ -136,7 +137,7 @@ function DataTableInner<T>({
 
   // eslint-disable-next-line react-hooks/incompatible-library
   const virtualizer = useVirtualizer({
-    count: data.length,
+    count: needsVirtualization ? data.length : 0,
     getScrollElement: () => parentRef.current,
     estimateSize: getEstimateSize,
     overscan: 6,
@@ -152,16 +153,19 @@ function DataTableInner<T>({
     [minWidth, columns.length, showSelection],
   );
 
-  const virtualItems = virtualizer.getVirtualItems();
-  const totalSize = virtualizer.getTotalSize();
+  const virtualItems = needsVirtualization ? virtualizer.getVirtualItems() : [];
+  const totalSize = needsVirtualization ? virtualizer.getTotalSize() : data.length * estimateSize;
+  const lastItemIndex = virtualItems.length > 0 ? virtualItems[virtualItems.length - 1].index : -1;
+  const lastItemIndexRef = useRef(-1);
 
   useEffect(() => {
-    if (!onNearEnd || virtualItems.length === 0) return;
-    const lastItem = virtualItems[virtualItems.length - 1];
-    if (lastItem.index >= data.length - 1) {
+    if (!onNearEnd || lastItemIndex < 0) return;
+    if (lastItemIndex === lastItemIndexRef.current) return;
+    lastItemIndexRef.current = lastItemIndex;
+    if (lastItemIndex >= data.length - 1) {
       onNearEnd();
     }
-  }, [virtualItems, data.length, onNearEnd]);
+  }, [lastItemIndex, data.length, onNearEnd]);
 
   return (
     <div
@@ -232,26 +236,67 @@ function DataTableInner<T>({
             </div>
           </div>
 
-          <div className="relative w-full" style={{ height: totalSize }}>
-            {virtualItems.map((item) => {
-              const row = data[item.index];
-              const rowId = getRowId(row);
-              return (
-                <DataTableRow
-                  key={item.key}
-                  row={row}
-                  columns={columns}
-                  gridTemplate={gridTemplate}
-                  showSelection={showSelection}
-                  selected={selectedIds?.has(rowId) ?? false}
-                  rowId={rowId}
-                  onToggleRow={onToggleRow}
-                  start={item.start}
-                  index={item.index}
-                  size={item.size}
-                />
-              );
-            })}
+          <div className="relative w-full" style={needsVirtualization ? { height: totalSize } : undefined}>
+            {needsVirtualization
+              ? virtualItems.map((item) => {
+                  const row = data[item.index];
+                  const rowId = getRowId(row);
+                  return (
+                    <DataTableRow
+                      key={item.key}
+                      row={row}
+                      columns={columns}
+                      gridTemplate={gridTemplate}
+                      showSelection={showSelection}
+                      selected={selectedIds?.has(rowId) ?? false}
+                      rowId={rowId}
+                      onToggleRow={onToggleRow}
+                      start={item.start}
+                      index={item.index}
+                      size={item.size}
+                    />
+                  );
+                })
+              : data.map((row) => {
+                  const rowId = getRowId(row);
+                  return (
+                    <div
+                      key={rowId}
+                      role="row"
+                      data-state={selectedIds?.has(rowId) ? "selected" : undefined}
+                      className={cn(
+                        "grid items-center gap-3 border-b px-3 py-2.5 text-sm data-[state=selected]:bg-muted/40 sm:gap-4 sm:px-4",
+                        showSelection ? "grid-cols-[40px_1fr]" : "grid-cols-1",
+                      )}
+                    >
+                      {showSelection ? (
+                        <div className="flex items-center justify-center" role="cell">
+                          <input
+                            type="checkbox"
+                            className="size-4 accent-foreground"
+                            checked={selectedIds?.has(rowId) ?? false}
+                            onChange={() => onToggleRow?.(rowId)}
+                            aria-label={`Select row ${rowId}`}
+                          />
+                        </div>
+                      ) : null}
+                      <div
+                        className="grid min-w-0 items-center gap-3 sm:gap-4"
+                        style={{ gridTemplateColumns: gridTemplate }}
+                      >
+                        {columns.map((column) => (
+                          <div
+                            key={column.id}
+                            className={cn("min-w-0 overflow-hidden", column.className)}
+                            role="cell"
+                          >
+                            {column.cell(row)}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
           </div>
         </div>
       </div>

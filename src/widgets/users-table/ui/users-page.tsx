@@ -39,8 +39,7 @@ import { DEFAULT_PAGE_SIZE } from "@/shared/config/constants";
 import { exportToCsv } from "@/shared/lib/csv";
 import { notify } from "@/shared/lib/notifications";
 import { useDebouncedValue } from "@/shared/hooks/use-debounced-value";
-
-type ViewMode = "paginated" | "infinite";
+import { useTableMode } from "@/shared/hooks/use-table-mode";
 
 const getUserRowId = (row: User) => row.id;
 
@@ -57,7 +56,7 @@ export function UsersPage() {
     by: "firstName",
     order: "asc",
   });
-  const [viewMode, setViewMode] = useState<ViewMode>("paginated");
+  const { viewMode, toggleViewMode } = useTableMode();
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
   const visibleColumns = useUiSettingsStore((s) => s.userColumns);
   const setUserColumns = useUiSettingsStore((s) => s.setUserColumns);
@@ -89,10 +88,11 @@ export function UsersPage() {
   );
 
   const countries = useMemo(() => {
-    const source = viewMode === "paginated" ? query.data?.users : infiniteQuery.data?.pages.flatMap((p) => p.users);
+    const allLoaded = infiniteQuery.data?.pages.flatMap((p) => p.users);
+    const source = allLoaded?.length ? allLoaded : query.data?.users;
     const set = new Set((source ?? []).map((u) => u.address.country));
     return Array.from(set).sort();
-  }, [query.data?.users, infiniteQuery.data, viewMode]);
+  }, [query.data?.users, infiniteQuery.data]);
 
   const filterUsers = useCallback(
     (rows: User[]) => {
@@ -289,19 +289,13 @@ export function UsersPage() {
     notify.csvExport(tNotify("csvExported", { filename: "Users" }));
   }, [filteredUsers, selectedIds, tNotify]);
 
-  const toggleViewMode = useCallback(() => {
-    setViewMode((prev) => (prev === "paginated" ? "infinite" : "paginated"));
-    setPage(1);
-    setSelectedIds(new Set());
-  }, []);
-
   return (
     <div className="w-full min-w-0 space-y-4">
       <PageHeader
         title={t("title")}
         subtitle={t("subtitle")}
         actions={
-          <Button type="button" variant="outline" size="sm" onClick={toggleViewMode}>
+          <Button type="button" variant="outline" size="sm" onClick={() => { toggleViewMode(); setPage(1); setSelectedIds(new Set()); }}>
             {viewMode === "paginated" ? "Infinite Scroll" : "Paginated"}
           </Button>
         }

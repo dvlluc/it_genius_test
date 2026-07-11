@@ -35,8 +35,7 @@ import { Input } from "@/shared/ui/input";
 import { DEFAULT_PAGE_SIZE } from "@/shared/config/constants";
 import { formatCurrency, formatPercent } from "@/shared/lib/formatters";
 import { useDebouncedValue } from "@/shared/hooks/use-debounced-value";
-
-type ViewMode = "paginated" | "infinite";
+import { useTableMode } from "@/shared/hooks/use-table-mode";
 
 const getProductRowId = (row: Product) => row.id;
 
@@ -120,7 +119,7 @@ export function ProductsPage() {
     by: "title",
     order: "asc",
   });
-  const [viewMode, setViewMode] = useState<ViewMode>("paginated");
+  const { viewMode, toggleViewMode } = useTableMode();
   const debouncedSearch = useDebouncedValue(search, 300);
 
   const categoriesQuery = useProductCategoriesQuery();
@@ -213,18 +212,13 @@ export function ProductsPage() {
     setPage(1);
   }, []);
 
-  const toggleViewMode = useCallback(() => {
-    setViewMode((prev) => (prev === "paginated" ? "infinite" : "paginated"));
-    setPage(1);
-  }, []);
-
   return (
     <div className="w-full min-w-0 space-y-4">
       <PageHeader
         title={t("title")}
         subtitle={t("subtitle")}
         actions={
-          <Button type="button" variant="outline" size="sm" onClick={toggleViewMode}>
+          <Button type="button" variant="outline" size="sm" onClick={() => { toggleViewMode(); setPage(1); }}>
             {viewMode === "paginated" ? "Infinite Scroll" : "Paginated"}
           </Button>
         }
