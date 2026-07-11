@@ -2,12 +2,12 @@ export const LOCALES = ["en", "ru"] as const;
 export type Locale = (typeof LOCALES)[number];
 
 function readEnv(name: string, fallback: string): string {
-  const value = process.env[name];
+  const value = typeof process !== "undefined" ? process.env?.[name] : undefined;
   return value && value.length > 0 ? value : fallback;
 }
 
 function readEnvNumber(name: string, fallback: number): number {
-  const raw = process.env[name];
+  const raw = typeof process !== "undefined" ? process.env?.[name] : undefined;
   if (!raw) return fallback;
   const parsed = Number(raw);
   return Number.isFinite(parsed) ? parsed : fallback;
