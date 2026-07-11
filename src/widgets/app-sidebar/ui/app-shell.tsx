@@ -1,9 +1,14 @@
 "use client";
 
 import type { ReactNode } from "react";
+import dynamic from "next/dynamic";
 import { AppSidebar } from "@/widgets/app-sidebar/ui/app-sidebar";
 import { AppHeader } from "@/widgets/app-header/ui/app-header";
-import { CommandPalette } from "@/widgets/command-palette/ui/command-palette";
+
+const CommandPalette = dynamic(
+  () => import("@/widgets/command-palette/ui/command-palette").then((m) => ({ default: m.CommandPalette })),
+  { ssr: false },
+);
 
 export function AppShell({ children }: { children: ReactNode }) {
   return (

@@ -31,16 +31,21 @@ import {
   computeLowStockCount,
   computeRevenue,
 } from "@/shared/lib/analytics";
+import dynamic from "next/dynamic";
 import {
   DynamicCategoryBarChart,
   DynamicCountryPieChart,
   DynamicOrdersAreaChart,
   DynamicRevenueLineChart,
   DynamicTopProductsBarChart,
-} from "@/widgets/dashboard-charts/ui/charts";
+} from "@/widgets/dashboard-charts/ui/dynamic-charts";
 import { RecentActivity } from "@/widgets/recent-activity/ui/recent-activity";
-import { DashboardGrid } from "@/widgets/dashboard-grid/ui/dashboard-grid";
 import { getUserFullName } from "@/entities/user/model/types";
+
+const DashboardGrid = dynamic(
+  () => import("@/widgets/dashboard-grid/ui/dashboard-grid").then((m) => ({ default: m.DashboardGrid })),
+  { ssr: false },
+);
 
 export function DashboardPage() {
   const t = useTranslations("dashboard");

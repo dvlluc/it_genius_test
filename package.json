@@ -24,9 +24,7 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",
-    "date-fns": "^4.4.0",
     "lucide-react": "^1.24.0",
-    "motion": "^12.42.2",
     "next": "16.2.10",
     "next-intl": "^4.13.2",
     "next-themes": "^0.4.6",
@@ -41,6 +39,12 @@
     "zod": "^4.4.3",
     "zustand": "^5.0.14"
   },
+  "browserslist": [
+    "last 2 Chrome versions",
+    "last 2 Firefox versions",
+    "last 2 Safari versions",
+    "last 2 Edge versions"
+  ],
   "devDependencies": {
     "@storybook/react": "^10.5.0",
     "@storybook/react-vite": "^10.5.0",

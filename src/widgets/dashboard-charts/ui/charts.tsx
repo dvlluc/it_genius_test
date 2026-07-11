@@ -1,6 +1,5 @@
 "use client";
 
-import dynamic from "next/dynamic";
 import {
   Area,
   AreaChart,
@@ -198,28 +197,3 @@ export function TopProductsBarChart({
 export function ChartSkeleton() {
   return <Skeleton className="h-[300px] w-full rounded-xl" />;
 }
-
-export const DynamicRevenueLineChart = dynamic(
-  () => Promise.resolve(RevenueLineChart),
-  { ssr: false, loading: () => <ChartSkeleton /> },
-);
-export const DynamicOrdersAreaChart = dynamic(
-  () => Promise.resolve(OrdersAreaChart),
-  { ssr: false, loading: () => <ChartSkeleton /> },
-);
-export const DynamicUsersLineChart = dynamic(
-  () => Promise.resolve(UsersLineChart),
-  { ssr: false, loading: () => <ChartSkeleton /> },
-);
-export const DynamicCategoryBarChart = dynamic(
-  () => Promise.resolve(CategoryBarChart),
-  { ssr: false, loading: () => <ChartSkeleton /> },
-);
-export const DynamicCountryPieChart = dynamic(
-  () => Promise.resolve(CountryPieChart),
-  { ssr: false, loading: () => <ChartSkeleton /> },
-);
-export const DynamicTopProductsBarChart = dynamic(
-  () => Promise.resolve(TopProductsBarChart),
-  { ssr: false, loading: () => <ChartSkeleton /> },
-);

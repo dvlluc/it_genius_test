@@ -15,13 +15,13 @@ import {
   buildUsersGrowth,
 } from "@/shared/lib/analytics";
 import {
+  DynamicRevenueLineChart,
+  DynamicOrdersAreaChart,
+  DynamicUsersLineChart,
   DynamicCategoryBarChart,
   DynamicCountryPieChart,
-  DynamicOrdersAreaChart,
-  DynamicRevenueLineChart,
   DynamicTopProductsBarChart,
-  DynamicUsersLineChart,
-} from "@/widgets/dashboard-charts/ui/charts";
+} from "@/widgets/dashboard-charts/ui/dynamic-charts";
 import { Skeleton } from "@/shared/ui/skeleton";
 
 export function AnalyticsPage() {
