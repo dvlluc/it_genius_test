@@ -37,7 +37,4 @@ export async function fetchAllUsers(limit = 100): Promise<User[]> {
   return data.users;
 }
 
-export async function fetchUserById(id: number): Promise<User> {
-  const { data } = await apiClient.get<User>(`/users/${id}`);
-  return data;
-}
+

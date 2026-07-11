@@ -106,7 +106,7 @@ Pages only compose widgets. Data fetching lives in entity query hooks. Shared UI
 4. Charts are **dynamically imported** (`ssr: false`) to keep the initial JS lighter.
 5. All data tables use **TanStack Virtual** for row virtualization.
 6. Dashboard widgets support **drag-and-drop reordering** via @dnd-kit with persistence in localStorage.
-7. Products page offers **infinite scroll** as an alternative to pagination.
+7. All data tables offer **infinite scroll** as an alternative to pagination.
 
 ## Assumptions
 
@@ -130,7 +130,7 @@ Pages only compose widgets. Data fetching lives in entity query hooks. Shared UI
 - Image optimization via `next/image` + remote patterns
 - Settings persistence in `localStorage`
 - Drag-and-drop dashboard widget reordering
-- Infinite scroll mode for products
+- Infinite scroll mode for all tables
 - PWA manifest
 - 27 unit tests across utilities, types, and store
 - Storybook for UI component development

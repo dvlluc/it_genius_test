@@ -20,7 +20,4 @@ export async function fetchAllCarts(limit = 100): Promise<Cart[]> {
   return data.carts;
 }
 
-export async function fetchCartById(id: number): Promise<Cart> {
-  const { data } = await apiClient.get<Cart>(`/carts/${id}`);
-  return data;
-}
+
