@@ -2,8 +2,9 @@
 
 import { useCallback, useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
-import { DownloadIcon } from "lucide-react";
+import { DownloadIcon, LoaderIcon } from "lucide-react";
 import { useUsersQuery } from "@/entities/user/api/user-queries";
+import { useUsersInfiniteQuery } from "@/entities/user/api/user-infinite-queries";
 import {
   deriveUserStatus,
   getUserFullName,
@@ -39,6 +40,8 @@ import { exportToCsv } from "@/shared/lib/csv";
 import { notify } from "@/shared/lib/notifications";
 import { useDebouncedValue } from "@/shared/hooks/use-debounced-value";
 
+type ViewMode = "paginated" | "infinite";
+
 const getUserRowId = (row: User) => row.id;
 
 export function UsersPage() {
@@ -54,6 +57,7 @@ export function UsersPage() {
     by: "firstName",
     order: "asc",
   });
+  const [viewMode, setViewMode] = useState<ViewMode>("paginated");
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
   const visibleColumns = useUiSettingsStore((s) => s.userColumns);
   const setUserColumns = useUiSettingsStore((s) => s.setUserColumns);
@@ -62,6 +66,13 @@ export function UsersPage() {
   const query = useUsersQuery({
     limit: pageSize,
     skip: (page - 1) * pageSize,
+    q: debouncedSearch || undefined,
+    sortBy: sort.by,
+    order: sort.order,
+  });
+
+  const infiniteQuery = useUsersInfiniteQuery({
+    limit: pageSize,
     q: debouncedSearch || undefined,
     sortBy: sort.by,
     order: sort.order,
@@ -78,20 +89,53 @@ export function UsersPage() {
   );
 
   const countries = useMemo(() => {
-    const set = new Set((query.data?.users ?? []).map((u) => u.address.country));
+    const source = viewMode === "paginated" ? query.data?.users : infiniteQuery.data?.pages.flatMap((p) => p.users);
+    const set = new Set((source ?? []).map((u) => u.address.country));
     return Array.from(set).sort();
-  }, [query.data?.users]);
+  }, [query.data?.users, infiniteQuery.data, viewMode]);
 
-  const filteredUsers = useMemo(() => {
-    let rows = query.data?.users ?? [];
-    if (status !== "all") {
-      rows = rows.filter((user) => deriveUserStatus(user) === status);
+  const filterUsers = useCallback(
+    (rows: User[]) => {
+      let filtered = rows;
+      if (status !== "all") {
+        filtered = filtered.filter((user) => deriveUserStatus(user) === status);
+      }
+      if (country !== "all") {
+        filtered = filtered.filter((user) => user.address.country === country);
+      }
+      return filtered;
+    },
+    [status, country],
+  );
+
+  const paginatedUsers = useMemo(() => {
+    return filterUsers(query.data?.users ?? []);
+  }, [query.data?.users, filterUsers]);
+
+  const infiniteUsers = useMemo(() => {
+    const allUsers = infiniteQuery.data?.pages.flatMap((p) => p.users) ?? [];
+    return filterUsers(allUsers);
+  }, [infiniteQuery.data, filterUsers]);
+
+  const {
+    hasNextPage: infiniteHasNextPage,
+    isFetchingNextPage: infiniteIsFetchingNextPage,
+    fetchNextPage: infiniteFetchNextPage,
+  } = infiniteQuery;
+
+  const handleNearEnd = useCallback(() => {
+    if (infiniteHasNextPage && !infiniteIsFetchingNextPage) {
+      infiniteFetchNextPage();
     }
-    if (country !== "all") {
-      rows = rows.filter((user) => user.address.country === country);
-    }
-    return rows;
-  }, [query.data?.users, status, country]);
+  }, [infiniteHasNextPage, infiniteIsFetchingNextPage, infiniteFetchNextPage]);
+
+  const filteredUsers = viewMode === "paginated" ? paginatedUsers : infiniteUsers;
+  const total = viewMode === "paginated" ? (query.data?.total ?? 0) : infiniteUsers.length;
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
+
+  const isLoading = viewMode === "paginated" ? query.isLoading : infiniteQuery.isLoading;
+  const isError = viewMode === "paginated" ? query.isError : infiniteQuery.isError;
+  const activeQuery = viewMode === "paginated" ? query : infiniteQuery;
 
   const columns = useMemo(() => {
     const columnDefs: Record<UserColumnId, DataTableColumn<User>> = {
@@ -245,12 +289,23 @@ export function UsersPage() {
     notify.csvExport(tNotify("csvExported", { filename: "Users" }));
   }, [filteredUsers, selectedIds, tNotify]);
 
-  const total = query.data?.total ?? 0;
-  const totalPages = Math.max(1, Math.ceil(total / pageSize));
+  const toggleViewMode = useCallback(() => {
+    setViewMode((prev) => (prev === "paginated" ? "infinite" : "paginated"));
+    setPage(1);
+    setSelectedIds(new Set());
+  }, []);
 
   return (
     <div className="w-full min-w-0 space-y-4">
-      <PageHeader title={t("title")} subtitle={t("subtitle")} />
+      <PageHeader
+        title={t("title")}
+        subtitle={t("subtitle")}
+        actions={
+          <Button type="button" variant="outline" size="sm" onClick={toggleViewMode}>
+            {viewMode === "paginated" ? "Infinite Scroll" : "Paginated"}
+          </Button>
+        }
+      />
 
       <DataTableToolbar
         search={search}
@@ -307,22 +362,22 @@ export function UsersPage() {
         onClear={clearSelection}
       />
 
-      {query.isLoading && !query.isPlaceholderData ? <DataTableSkeleton /> : null}
+      {isLoading && !activeQuery.isPlaceholderData ? <DataTableSkeleton /> : null}
 
-      {query.isError ? (
+      {isError ? (
         <ErrorState
           title={tCommon("errorTitle")}
           description={tCommon("errorDescription")}
           retryLabel={tCommon("retry")}
-          onRetry={() => query.refetch()}
+          onRetry={() => activeQuery.refetch()}
         />
       ) : null}
 
-      {!query.isLoading && !query.isError && filteredUsers.length === 0 ? (
+      {!isLoading && !isError && filteredUsers.length === 0 ? (
         <EmptyState title={tCommon("noResults")} />
       ) : null}
 
-      {filteredUsers.length > 0 && !query.isError ? (
+      {filteredUsers.length > 0 && !isError ? (
         <DataTable
           columns={columns}
           data={filteredUsers}
@@ -335,20 +390,32 @@ export function UsersPage() {
           onSort={handleSort}
           estimateSize={56}
           minWidth={1100}
+          onNearEnd={viewMode === "infinite" ? handleNearEnd : undefined}
         />
       ) : null}
 
-      <DataTablePagination
-        page={page}
-        pageSize={pageSize}
-        total={total}
-        onPageChange={setPage}
-        onPageSizeChange={handlePageSizeChange}
-        previousLabel={tCommon("previous")}
-        nextLabel={tCommon("next")}
-        pageLabel={tCommon("page", { page, total: totalPages })}
-        rowsLabel={tCommon("rowsPerPage")}
-      />
+      {viewMode === "infinite" && infiniteQuery.isFetchingNextPage && (
+        <div className="flex justify-center py-4">
+          <LoaderIcon className="size-5 animate-spin text-muted-foreground" />
+        </div>
+      )}
+      {viewMode === "infinite" && !infiniteQuery.hasNextPage && filteredUsers.length > 0 && (
+        <p className="text-center text-sm text-muted-foreground">{tCommon("noResults")}</p>
+      )}
+
+      {viewMode === "paginated" && (
+        <DataTablePagination
+          page={page}
+          pageSize={pageSize}
+          total={total}
+          onPageChange={setPage}
+          onPageSizeChange={handlePageSizeChange}
+          previousLabel={tCommon("previous")}
+          nextLabel={tCommon("next")}
+          pageLabel={tCommon("page", { page, total: totalPages })}
+          rowsLabel={tCommon("rowsPerPage")}
+        />
+      )}
     </div>
   );
 }
