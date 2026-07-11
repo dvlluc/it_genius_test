@@ -6,7 +6,7 @@ import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useTheme } from "next-themes";
 import { useLocale, useTranslations } from "next-intl";
-import { toast } from "sonner";
+import { notify } from "@/shared/lib/notifications";
 import { PageHeader } from "@/shared/ui/page-header";
 import { Button } from "@/shared/ui/button";
 import { Input } from "@/shared/ui/input";
@@ -40,11 +40,15 @@ type SettingsFormValues = z.infer<typeof settingsSchema>;
 export function SettingsPage() {
   const t = useTranslations("settings");
   const tCommon = useTranslations("common");
+  const tNotify = useTranslations("notifications");
   const { setTheme } = useTheme();
   const locale = useLocale();
   const router = useRouter();
   const pathname = usePathname();
-  const notifications = useUiSettingsStore((s) => s.notifications);
+  const emailNotif = useUiSettingsStore((s) => s.notifications.email);
+  const pushNotif = useUiSettingsStore((s) => s.notifications.push);
+  const marketingNotif = useUiSettingsStore((s) => s.notifications.marketing);
+  const orderUpdatesNotif = useUiSettingsStore((s) => s.notifications.orderUpdates);
   const theme = useUiSettingsStore((s) => s.theme);
   const setStoreTheme = useUiSettingsStore((s) => s.setTheme);
   const setLocale = useUiSettingsStore((s) => s.setLocale);
@@ -58,10 +62,10 @@ export function SettingsPage() {
       role: "Administrator",
       theme,
       locale: locale as Locale,
-      emailNotifications: notifications.email,
-      pushNotifications: notifications.push,
-      marketingEmails: notifications.marketing,
-      orderUpdates: notifications.orderUpdates,
+      emailNotifications: emailNotif,
+      pushNotifications: pushNotif,
+      marketingEmails: marketingNotif,
+      orderUpdates: orderUpdatesNotif,
     },
   });
 
@@ -83,13 +87,13 @@ export function SettingsPage() {
       ...form.getValues(),
       theme,
       locale: locale as Locale,
-      emailNotifications: notifications.email,
-      pushNotifications: notifications.push,
-      marketingEmails: notifications.marketing,
-      orderUpdates: notifications.orderUpdates,
+      emailNotifications: emailNotif,
+      pushNotifications: pushNotif,
+      marketingEmails: marketingNotif,
+      orderUpdates: orderUpdatesNotif,
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps -- sync store → form only when store inputs change
-  }, [theme, locale, notifications]);
+  }, [theme, locale, emailNotif, pushNotif, marketingNotif, orderUpdatesNotif]);
 
   const onSubmit = (values: SettingsFormValues) => {
     setTheme(values.theme);
@@ -104,7 +108,7 @@ export function SettingsPage() {
     if (values.locale !== locale) {
       router.replace(pathname, { locale: values.locale });
     }
-    toast.success(t("saved"));
+    notify.settingsSaved(tNotify("settingsSaved"));
   };
 
   return (

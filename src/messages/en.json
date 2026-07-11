@@ -127,6 +127,11 @@
     "role": "Role",
     "saved": "Settings saved"
   },
+  "notifications": {
+    "csvExported": "{filename} exported",
+    "fetchError": "Failed to load data",
+    "settingsSaved": "Settings saved"
+  },
   "errors": {
     "notFoundTitle": "Page not found",
     "notFoundDescription": "The page you are looking for does not exist.",

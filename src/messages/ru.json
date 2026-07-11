@@ -127,6 +127,11 @@
     "role": "Роль",
     "saved": "Настройки сохранены"
   },
+  "notifications": {
+    "csvExported": "{filename} экспортирован",
+    "fetchError": "Не удалось загрузить данные",
+    "settingsSaved": "Настройки сохранены"
+  },
   "errors": {
     "notFoundTitle": "Страница не найдена",
     "notFoundDescription": "Запрошенная страница не существует.",

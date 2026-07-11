@@ -36,6 +36,7 @@ import {
 import { useUiSettingsStore, type UserColumnId } from "@/shared/stores/ui-settings";
 import { DEFAULT_PAGE_SIZE } from "@/shared/config/constants";
 import { exportToCsv } from "@/shared/lib/csv";
+import { notify } from "@/shared/lib/notifications";
 import { useDebouncedValue } from "@/shared/hooks/use-debounced-value";
 
 const getUserRowId = (row: User) => row.id;
@@ -43,6 +44,7 @@ const getUserRowId = (row: User) => row.id;
 export function UsersPage() {
   const t = useTranslations("users");
   const tCommon = useTranslations("common");
+  const tNotify = useTranslations("notifications");
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
   const [search, setSearch] = useState("");
@@ -242,7 +244,8 @@ export function UsersPage() {
         status: deriveUserStatus(user),
       })),
     );
-  }, [filteredUsers, selectedIds]);
+    notify.csvExport(tNotify("csvExported", { filename: "Users" }));
+  }, [filteredUsers, selectedIds, tNotify]);
 
   const total = query.data?.total ?? 0;
   const totalPages = Math.max(1, Math.ceil(total / pageSize));

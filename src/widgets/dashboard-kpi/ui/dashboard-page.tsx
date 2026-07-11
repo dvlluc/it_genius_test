@@ -21,6 +21,7 @@ import { ErrorState } from "@/shared/ui/error-state";
 import { Skeleton } from "@/shared/ui/skeleton";
 import { formatCurrency, formatNumber, formatRating } from "@/shared/lib/formatters";
 import { exportToCsv } from "@/shared/lib/csv";
+import { notify } from "@/shared/lib/notifications";
 import {
   buildCategoryDistribution,
   buildMonthlySeries,
@@ -44,6 +45,7 @@ import { getUserFullName } from "@/entities/user/model/types";
 export function DashboardPage() {
   const t = useTranslations("dashboard");
   const tCommon = useTranslations("common");
+  const tNotify = useTranslations("notifications");
   const usersQuery = useAllUsersQuery(100);
   const productsQuery = useAllProductsQuery(100);
   const ordersQuery = useAllOrdersQuery(100);
@@ -113,7 +115,8 @@ export function DashboardPage() {
     }));
     exportToCsv("dashboard-kpi.csv", kpiRows);
     exportToCsv("dashboard-monthly.csv", monthlyRows);
-  }, [users, products, carts, monthly]);
+    notify.csvExport(tNotify("csvExported", { filename: "Dashboard" }));
+  }, [users, products, carts, monthly, tNotify]);
 
   if (isError) {
     return (

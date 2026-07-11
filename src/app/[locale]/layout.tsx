@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { notFound } from "next/navigation";
 import { NextIntlClientProvider } from "next-intl";
@@ -23,12 +23,15 @@ export const metadata: Metadata = {
   title: APP_NAME,
   description: "Modern SaaS analytics admin panel",
   manifest: "/manifest.json",
-  themeColor: "#0a0a0a",
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
     title: APP_NAME,
   },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#0a0a0a",
 };
 
 type LocaleLayoutProps = {
